@@ -36,7 +36,7 @@
 			// btnLogin
 			// 
 			this.btnLogin.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-			this.btnLogin.Location = new System.Drawing.Point(65, 55);
+			this.btnLogin.Location = new System.Drawing.Point(65, 204);
 			this.btnLogin.Name = "btnLogin";
 			this.btnLogin.Size = new System.Drawing.Size(96, 23);
 			this.btnLogin.TabIndex = 0;
@@ -66,7 +66,7 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(227, 90);
+			this.ClientSize = new System.Drawing.Size(227, 239);
 			this.Controls.Add(this.lblUsername);
 			this.Controls.Add(this.txtUsername);
 			this.Controls.Add(this.btnLogin);
