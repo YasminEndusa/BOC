@@ -1,4 +1,4 @@
-﻿namespace ChatClientCore
+﻿namespace ChatClient
 {
 	partial class MainForm
 	{
@@ -28,29 +28,20 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.rtbChat = new System.Windows.Forms.RichTextBox();
 			this.txtMessage = new System.Windows.Forms.TextBox();
 			this.btnSend = new System.Windows.Forms.Button();
+			this.btnUploadFile = new ChatClient.ImageButton();
+			this.btnUploadImage = new ChatClient.ImageButton();
+			this.pnlMessages = new ChatClient.ChatMessagePanel();
 			this.SuspendLayout();
-			// 
-			// rtbChat
-			// 
-			this.rtbChat.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.rtbChat.Location = new System.Drawing.Point(12, 12);
-			this.rtbChat.Name = "rtbChat";
-			this.rtbChat.Size = new System.Drawing.Size(761, 424);
-			this.rtbChat.TabIndex = 0;
-			this.rtbChat.Text = "";
 			// 
 			// txtMessage
 			// 
 			this.txtMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.txtMessage.Location = new System.Drawing.Point(12, 444);
+			this.txtMessage.Location = new System.Drawing.Point(72, 444);
 			this.txtMessage.Name = "txtMessage";
-			this.txtMessage.Size = new System.Drawing.Size(680, 20);
+			this.txtMessage.Size = new System.Drawing.Size(620, 20);
 			this.txtMessage.TabIndex = 1;
 			this.txtMessage.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtMessage_KeyDown);
 			// 
@@ -65,29 +56,62 @@
 			this.btnSend.UseVisualStyleBackColor = true;
 			this.btnSend.Click += new System.EventHandler(this.SendButton_Click);
 			// 
+			// btnUploadFile
+			// 
+			this.btnUploadFile.Location = new System.Drawing.Point(42, 441);
+			this.btnUploadFile.Name = "btnUploadFile";
+			this.btnUploadFile.Size = new System.Drawing.Size(24, 24);
+			this.btnUploadFile.TabIndex = 6;
+			this.btnUploadFile.UseVisualStyleBackColor = true;
+			this.btnUploadFile.Click += new System.EventHandler(this.btnUploadFile_Click);
+			// 
+			// btnUploadImage
+			// 
+			this.btnUploadImage.Location = new System.Drawing.Point(12, 441);
+			this.btnUploadImage.Name = "btnUploadImage";
+			this.btnUploadImage.Size = new System.Drawing.Size(24, 24);
+			this.btnUploadImage.TabIndex = 5;
+			this.btnUploadImage.UseVisualStyleBackColor = true;
+			this.btnUploadImage.Click += new System.EventHandler(this.btnUploadImage_Click);
+			// 
+			// pnlMessages
+			// 
+			this.pnlMessages.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.pnlMessages.AutoScroll = true;
+			this.pnlMessages.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+			this.pnlMessages.Location = new System.Drawing.Point(12, 12);
+			this.pnlMessages.Name = "pnlMessages";
+			this.pnlMessages.Size = new System.Drawing.Size(761, 424);
+			this.pnlMessages.TabIndex = 4;
+			this.pnlMessages.OpenImage += new System.EventHandler<ChatClient.OpenImageEventArgs>(this.pnlMessages_OpenImage);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(785, 477);
+			this.Controls.Add(this.btnUploadFile);
+			this.Controls.Add(this.btnUploadImage);
+			this.Controls.Add(this.pnlMessages);
 			this.Controls.Add(this.btnSend);
 			this.Controls.Add(this.txtMessage);
-			this.Controls.Add(this.rtbChat);
 			this.Name = "MainForm";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.Text = "BO Chat";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
-			this.Load += new System.EventHandler(this.MainForm_Load);
+			this.Shown += new System.EventHandler(this.MainForm_Shown);
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
 		}
 
 		#endregion
-
-		private System.Windows.Forms.RichTextBox rtbChat;
 		private System.Windows.Forms.TextBox txtMessage;
 		private System.Windows.Forms.Button btnSend;
+		private ChatMessagePanel pnlMessages;
+		private ImageButton btnUploadImage;
+		private ImageButton btnUploadFile;
 	}
 }
-

@@ -1,4 +1,4 @@
-﻿namespace ChatClientCore
+﻿namespace ChatClient
 {
 	partial class LoginForm
 	{
@@ -31,12 +31,15 @@
 			this.btnLogin = new System.Windows.Forms.Button();
 			this.txtUsername = new System.Windows.Forms.TextBox();
 			this.lblUsername = new System.Windows.Forms.Label();
+			this.lblPassword = new System.Windows.Forms.Label();
+			this.txtPassword = new System.Windows.Forms.TextBox();
+			this.ckbShowPassword = new System.Windows.Forms.CheckBox();
 			this.SuspendLayout();
 			// 
 			// btnLogin
 			// 
 			this.btnLogin.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-			this.btnLogin.Location = new System.Drawing.Point(65, 204);
+			this.btnLogin.Location = new System.Drawing.Point(65, 117);
 			this.btnLogin.Name = "btnLogin";
 			this.btnLogin.Size = new System.Drawing.Size(96, 23);
 			this.btnLogin.TabIndex = 0;
@@ -50,7 +53,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.txtUsername.Location = new System.Drawing.Point(15, 25);
 			this.txtUsername.Name = "txtUsername";
-			this.txtUsername.Size = new System.Drawing.Size(203, 20);
+			this.txtUsername.Size = new System.Drawing.Size(200, 20);
 			this.txtUsername.TabIndex = 1;
 			// 
 			// lblUsername
@@ -62,11 +65,43 @@
 			this.lblUsername.TabIndex = 2;
 			this.lblUsername.Text = "Username";
 			// 
+			// lblPassword
+			// 
+			this.lblPassword.AutoSize = true;
+			this.lblPassword.Location = new System.Drawing.Point(12, 48);
+			this.lblPassword.Name = "lblPassword";
+			this.lblPassword.Size = new System.Drawing.Size(53, 13);
+			this.lblPassword.TabIndex = 3;
+			this.lblPassword.Text = "Password";
+			// 
+			// txtPassword
+			// 
+			this.txtPassword.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.txtPassword.Location = new System.Drawing.Point(15, 64);
+			this.txtPassword.Name = "txtPassword";
+			this.txtPassword.Size = new System.Drawing.Size(200, 20);
+			this.txtPassword.TabIndex = 4;
+			// 
+			// ckbShowPassword
+			// 
+			this.ckbShowPassword.AutoSize = true;
+			this.ckbShowPassword.Location = new System.Drawing.Point(15, 90);
+			this.ckbShowPassword.Name = "ckbShowPassword";
+			this.ckbShowPassword.Size = new System.Drawing.Size(101, 17);
+			this.ckbShowPassword.TabIndex = 5;
+			this.ckbShowPassword.Text = "Show password";
+			this.ckbShowPassword.UseVisualStyleBackColor = true;
+			this.ckbShowPassword.CheckedChanged += new System.EventHandler(this.ckbShowPassword_CheckedChanged);
+			// 
 			// LoginForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(227, 239);
+			this.ClientSize = new System.Drawing.Size(227, 152);
+			this.Controls.Add(this.ckbShowPassword);
+			this.Controls.Add(this.txtPassword);
+			this.Controls.Add(this.lblPassword);
 			this.Controls.Add(this.lblUsername);
 			this.Controls.Add(this.txtUsername);
 			this.Controls.Add(this.btnLogin);
@@ -74,6 +109,7 @@
 			this.Name = "LoginForm";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "BO Chat Login";
+			this.Load += new System.EventHandler(this.LoginForm_Load);
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -84,5 +120,8 @@
 		private System.Windows.Forms.Button btnLogin;
 		private System.Windows.Forms.TextBox txtUsername;
 		private System.Windows.Forms.Label lblUsername;
+		private System.Windows.Forms.Label lblPassword;
+		private System.Windows.Forms.TextBox txtPassword;
+		private System.Windows.Forms.CheckBox ckbShowPassword;
 	}
 }

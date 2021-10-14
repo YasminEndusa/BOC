@@ -1,140 +1,121 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+using ChatAPI;
 
 namespace ChatServerCore
 {
 	class Program
 	{
-		const string COMMAND_EXIT = "exit";
-		const string CLIENTCOMMAND_SETNAME = "/setname ";
-		const string CLIENTCOMMAND_DISCONNECT = "/disconnect";
+		static readonly string[] _commands = { CommandManager.COMMAND_START, CommandManager.COMMAND_EXIT, CommandManager.COMMAND_ADDUSER, CommandManager.COMMAND_CHANGEUSERPASS };
 
-		static readonly List<ChatClient> _clients = new List<ChatClient>();
-		static readonly string _motd = "Welcome to Binary Overdrive Chat Server - Test Instance.";
-		static bool running = true;
+		static int _port = 15489;
+		static bool _running = true;
 
 		static void Main(string[] args)
 		{
-			IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 15489);
-			Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			socket.Bind(endPoint);
-
-			socket.Listen(1);
-
-			Task.Run(() => {
-				while (running)
-				{
-					Socket clientSocket = socket.Accept();
-					string username = string.Format("[{0}]", (clientSocket.RemoteEndPoint as IPEndPoint).Address.ToString());
-					ChatClient client = new ChatClient(username, clientSocket);
-					_clients.Add(client);
-
-					Task.Run(() => {
-						SendToClient(clientSocket, _motd);
-						ListenFromClient(client);
-					});
-				}
-			});
-
-			while (running)
+			if (args.Length == 1)
 			{
-				string input = Console.ReadLine();
-				if (input == COMMAND_EXIT)
+				int tmpPort;
+
+				if (int.TryParse(args[0], out tmpPort))
 				{
-					SendToAllClients("Server closed, good bye!");
-					CloseAllClientSockets();
-					running = false;
-				}
-			}
-
-			socket.Close();
-			Console.WriteLine("Server has been closed!");
-			Console.ReadKey();
-		}
-
-		private static void SendToClient(Socket clientSocket, string text)
-		{
-			clientSocket.Send(Encoding.ASCII.GetBytes(text));
-		}
-
-		private static void ListenFromClient(ChatClient client)
-		{
-			try
-			{
-				while (running)
-				{
-					byte[] buffer = new byte[1024];
-					int received = client.Socket.Receive(buffer);
-
-					Task.Run(() =>
+					if (tmpPort >= IPEndPoint.MinPort && tmpPort <= IPEndPoint.MaxPort)
 					{
-						if (received > 0)
+						_port = tmpPort;
+					}
+					else
+					{
+						Console.WriteLine("Port has to be between {0} and {1} (given {2})!", IPEndPoint.MinPort, IPEndPoint.MaxPort, tmpPort);
+						_ = Console.ReadKey();
+						Environment.Exit(-1);
+					}
+				}
+			}
+
+			Console.WriteLine(string.Format("Please use one of the following commands: {0}", string.Join(", ", _commands)));
+
+			while (_running)
+			{
+				Console.Write(">>> ");
+				string input = Console.ReadLine();
+
+				if (input == CommandManager.COMMAND_EXIT)
+				{
+					if (ServerManager.Server != null)
+					{
+						ServerManager.Server.SendToAllClients(MessageType.ServerMessage, null, "Server closed, good bye!");
+						ServerManager.Server.CloseAllClientSockets();
+					}
+					
+					_running = false;
+				}
+
+				if (input.StartsWith(CommandManager.COMMAND_START))
+				{
+					ServerManager.Server = new ChatServer(_port);
+					ServerManager.Server.ClientDisconnected += Server_ClientDisconnected;
+				}
+
+				if (input.StartsWith(CommandManager.COMMAND_ADDUSER))
+				{
+					string inputs = input.Remove(0, CommandManager.COMMAND_ADDUSER.Length + 1);
+					string[] inputsArray = inputs.Split(' ');
+
+					if (inputsArray.Length == 2)
+					{
+						string username = inputsArray[0];
+						string password = inputsArray[1];
+						password = Helpers.ComputeHash(password);
+						DataManager.Users.Add(username, password);
+						DataManager.SaveUsers();
+					}
+					else
+					{
+						Console.WriteLine("ERROR: Wrong amount of parameters. {0} requires 2 parameters. {1} parameters were provided.", CommandManager.COMMAND_ADDUSER, inputsArray.Length);
+					}
+				}
+
+				if (input.StartsWith(CommandManager.COMMAND_CHANGEUSERPASS))
+				{
+					string inputs = input.Remove(0, CommandManager.COMMAND_CHANGEUSERPASS.Length + 1);
+					string[] inputsArray = inputs.Split(' ');
+
+					if (inputsArray.Length == 2)
+					{
+						string username = inputsArray[0];
+						string password = inputsArray[1];
+						password = Helpers.ComputeHash(password);
+
+						if (DataManager.Users.ContainsKey(username))
 						{
-							string rawMessage = Encoding.ASCII.GetString(buffer, 0, received);
-							string message = string.Format("{0}: {1}", client.Username, rawMessage);
-
-							Console.WriteLine(message);
-
-							if (rawMessage.StartsWith(CLIENTCOMMAND_SETNAME))
-							{
-								string oldName = client.Username;
-								string newName = rawMessage.Remove(0, CLIENTCOMMAND_SETNAME.Length);
-								client.SetUsername(newName);
-
-								message = string.Format("~[{0} changed their name to {1}]", oldName, newName);
-							}
-							else if (rawMessage.StartsWith(CLIENTCOMMAND_DISCONNECT))
-							{
-								_clients.Remove(client);
-								client.Socket.Close();
-
-								message = string.Format("~[{0} disconnected]", client.Username);
-							}
-
-							if (message != null)
-							{
-								if (message.StartsWith("~"))
-								{
-									Console.WriteLine(message);
-								}
-
-								SendToAllClients(message);
-							}
+							DataManager.Users[username] = password;
+							DataManager.SaveUsers();
 						}
-					});
+						else
+						{
+							Console.WriteLine("ERROR: User '{0}' does not exist.", username);
+						}
+					}
+					else
+					{
+						Console.WriteLine("ERROR: Wrong amount of parameters. {0} requires 2 parameters. {1} parameters were provided.", CommandManager.COMMAND_CHANGEUSERPASS, inputsArray.Length);
+					}
 				}
 			}
-			catch (SocketException se)
+
+			if (ServerManager.Server != null)
 			{
-				_clients.Remove(client);
-				Console.WriteLine("Error listening on client: " + client.Username + " (" + se.Message + "). They have been disconnected!");
+				ServerManager.Server.CloseServer();
+				ServerManager.Server = null;
 			}
+
+			Console.WriteLine("Server has been closed!");
+			_ = Console.ReadKey();
 		}
 
-		private static void SendToAllClients(string text)
+		private static void Server_ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
 		{
-			Task.Run(() =>
-			{
-				Parallel.ForEach(_clients, (client) =>
-				{
-					client.Socket.Send(Encoding.ASCII.GetBytes(text));
-				});
-			});
-		}
-
-		private static void CloseAllClientSockets()
-		{
-			Task.Run(() =>
-			{
-				foreach (ChatClient chatClient in _clients)
-				{
-					chatClient.Socket.Close();
-				}
-			});
+			Console.WriteLine("Error listening on client: '{0}', IP '{1}'. They have been disconnected! ({2})", e.Username, e.Address, e.Message);
 		}
 	}
 }
