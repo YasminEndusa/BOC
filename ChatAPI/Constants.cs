@@ -1,12 +1,7 @@
 ﻿namespace ChatAPI
 {
-	public class Constants
+	public static class Constants
 	{
-		public const int MAX_MESSSAGE_SIZE = 1048576;
-
-		private Constants()
-		{
-
-		}
+		public const int MAX_MESSSAGE_SIZE = 10485760;
 	}
 }

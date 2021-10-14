@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -55,8 +56,23 @@ namespace ChatServerCore
 			{
 				while (this._running)
 				{
-					byte[] buffer = new byte[Constants.MAX_MESSSAGE_SIZE];
+					byte[] buffer = new byte[4];
 					int received = client.Socket.Receive(buffer);
+					int length = BitConverter.ToInt32(buffer);
+
+					if (length > Constants.MAX_MESSSAGE_SIZE)
+					{
+						_ = Task.Run(() =>
+						{
+							Message m = new Message(MessageType.Error, "Message too long, please send shorter messages/smaller images/files.");
+							SendToClient(client, m);
+						});
+
+						continue;
+					}
+
+					buffer = new byte[length];
+					received = client.Socket.Receive(buffer);
 
 					_ = Task.Run(() =>
 					{
@@ -205,7 +221,10 @@ namespace ChatServerCore
 				text = RsaEncryption.PREFIX_UNENCRYPTED + text;
 			}
 
-			_ = client.Socket.Send(Encoding.UTF8.GetBytes(text));
+			byte[] buffer = Encoding.UTF8.GetBytes(text);
+			byte[] length = BitConverter.GetBytes(buffer.Length);
+			byte[] final = length.Concat(buffer).ToArray();
+			_ = client.Socket.Send(final);
 		}
 
 		private static bool AuthenticateUser(string username, string password)

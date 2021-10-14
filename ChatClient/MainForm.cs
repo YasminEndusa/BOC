@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -80,9 +81,13 @@ namespace ChatClient
 			{
 				while (this._running)
 				{
-					byte[] buffer = new byte[Constants.MAX_MESSSAGE_SIZE];
+					byte[] buffer = new byte[4];
+					int received = this._socket.Receive(buffer);
+					int length = BitConverter.ToInt32(buffer, 0);
+					buffer = new byte[length];
+
 					SocketError socketError;
-					int received = this._socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
+					received = this._socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
 
 					if (socketError == SocketError.Success)
 					{
@@ -216,10 +221,13 @@ namespace ChatClient
 
 			if (encodedText.Length >= Constants.MAX_MESSSAGE_SIZE)
 			{
-				_ = MessageBox.Show("Image too big, max 1MB!");
+				_ = MessageBox.Show("Image too big, max 10MB!");
+				return;
 			}
 
-			_ = this._socket.Send(encodedText);
+			byte[] length = BitConverter.GetBytes(encodedText.Length);
+			byte[] final = length.Concat(encodedText).ToArray();
+			_ = this._socket.Send(final);
 		}
 
 		private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
