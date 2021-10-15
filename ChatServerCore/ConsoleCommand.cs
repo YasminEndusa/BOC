@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ChatServerCore
 {
-	public class ConsoleCommand
+	public abstract class ConsoleCommand
 	{
 		public string Command;
 
-		public ConsoleCommand(string command)
+		public ConsoleCommand()
 		{
-			this.Command = command;
+			this.Command = string.Empty;
 		}
 
-		public void Execute(string parameters)
-		{
-
-		}
+		public abstract void Execute(List<KeyValuePair<string, string>> parameters);
 	}
 }
