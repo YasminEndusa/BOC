@@ -69,54 +69,62 @@ namespace ChatClient
 						{
 							if (received > 0)
 							{
-								Message message = ReadMessage(buffer, received);
-
-								if (message._messageType == MessageType.Connect)
+								try
 								{
-									string[] rijndaelValues = JsonConvert.DeserializeObject<string[]>(message._payload.ToString());
-									_encryption.SetKeyFromString(rijndaelValues[0]);
-									_encryption.SetVectorFromString(rijndaelValues[1]);
+									Message message = ReadMessage(buffer, received);
+									this.HandleMessage(message);
 								}
-								else if (message._messageType == MessageType.Authenticate)
-								{
-									if (message._payload.GetType() == typeof(bool))
-									{
-										if (!(bool)message._payload)
-										{
-											this.OnNewMessage("ERROR", "Authentication failed", MessageType.Error);
-										}
-									}
-								}
-								else if (message._messageType == MessageType.ServerMessage || message._messageType == MessageType.TextMessage || message._messageType == MessageType.Error)
-								{
-									string user = message._sender;
-
-									if (message._messageType == MessageType.ServerMessage)
-									{
-										user = "~Server~";
-									}
-									else if (message._messageType == MessageType.Error)
-									{
-										user = "ERROR";
-									}
-
-									this.OnNewMessage(user, message._payload.ToString(), message._messageType);
-								}
-								else if (message._messageType == MessageType.Image)
-								{
-									string user = message._sender;
-									Image image = ImageManager.ImageFromBase64(message._payload.ToString());
-									this.OnNewMessage(user, string.Empty, message._messageType, image);
-								}
-								else
-								{
-									this.OnNewMessage("ERROR", string.Format("Unbekannter MessageType: {0}", message._messageType._messageType), MessageType.Error);
-								}
+								catch (Exception) { /*ignore*/ }
 							}
 						});
 					}
 				}
 			});
+		}
+
+		private void HandleMessage(Message message)
+		{
+			if (message._messageType == MessageType.Connect)
+			{
+				string[] rijndaelValues = JsonConvert.DeserializeObject<string[]>(message._payload.ToString());
+				_encryption.SetKeyFromString(rijndaelValues[0]);
+				_encryption.SetVectorFromString(rijndaelValues[1]);
+			}
+			else if (message._messageType == MessageType.Authenticate)
+			{
+				if (message._payload.GetType() == typeof(bool))
+				{
+					if (!(bool)message._payload)
+					{
+						this.OnNewMessage("ERROR", "Authentication failed", MessageType.Error);
+					}
+				}
+			}
+			else if (message._messageType == MessageType.ServerMessage || message._messageType == MessageType.TextMessage || message._messageType == MessageType.Error)
+			{
+				string user = message._sender;
+
+				if (message._messageType == MessageType.ServerMessage)
+				{
+					user = "~Server~";
+				}
+				else if (message._messageType == MessageType.Error)
+				{
+					user = "ERROR";
+				}
+
+				this.OnNewMessage(user, message._payload.ToString(), message._messageType);
+			}
+			else if (message._messageType == MessageType.Image)
+			{
+				string user = message._sender;
+				Image image = ImageManager.ImageFromBase64(message._payload.ToString());
+				this.OnNewMessage(user, string.Empty, message._messageType, image);
+			}
+			else
+			{
+				this.OnNewMessage("ERROR", string.Format("Unbekannter MessageType: {0}", message._messageType._messageType), MessageType.Error);
+			}
 		}
 
 		private void HandleSocketError(SocketError socketError)

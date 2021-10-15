@@ -90,10 +90,18 @@ namespace ChatServerCore
 
 					_ = Task.Run(() =>
 					{
-						if (received > 0)
+						try
 						{
-							Message message = ReadMessage(client, buffer, received);
-							this.HandleMessage(client, message);
+							if (received > 0)
+							{
+								Message message = ReadMessage(client, buffer, received);
+								this.HandleMessage(client, message);
+							}
+						}
+						catch (Exception)
+						{
+							Message m = new Message(MessageType.Error, "Error receiving your message. Please try again!");
+							SendToClient(client, m);
 						}
 					});
 				}
