@@ -1,9 +1,14 @@
-﻿using System.Net;
+﻿using System;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
+using System.Text;
+using ChatAPI;
+using Newtonsoft.Json;
 
 namespace ChatServerCore
 {
-	class ChatClient
+	public class ChatClient
 	{
 		public string Username { get; private set; }
 		public Socket Socket { get; }
@@ -34,6 +39,35 @@ namespace ChatServerCore
 		{
 			this.RijndaelKey = key;
 			this.RijndaelIV = iv;
+		}
+
+		public void SendMessage(Message message, bool rsa = false, bool rijndael = true)
+		{
+			string text = JsonConvert.SerializeObject(message);
+
+			if (rsa)
+			{
+				using (RsaEncryption enc = new RsaEncryption(this.PublicKey))
+				{
+					text = RsaEncryption.PREFIX_RSA + enc.Encrypt(text);
+				}
+			}
+			else if (rijndael)
+			{
+				using (RijndaelEncryption enc = new RijndaelEncryption(this.RijndaelKey, this.RijndaelIV))
+				{
+					text = RijndaelEncryption.PREFIX_RIJNDAEL + enc.Encrypt(text);
+				}
+			}
+			else
+			{
+				text = RsaEncryption.PREFIX_UNENCRYPTED + text;
+			}
+
+			byte[] buffer = Encoding.UTF8.GetBytes(text);
+			byte[] length = BitConverter.GetBytes(buffer.Length);
+			byte[] final = length.Concat(buffer).ToArray();
+			_ = this.Socket.Send(final);
 		}
 	}
 }

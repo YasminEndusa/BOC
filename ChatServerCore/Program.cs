@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using ChatServerCore.ConsoleCommands;
 
 namespace ChatServerCore
 {
@@ -31,7 +32,7 @@ namespace ChatServerCore
 			ServerManager.Port = _port;
 			ServerManager.Running = true;
 
-			((ConsoleCommands.StartCommand)CommandManager.GetCommand(ConsoleCommands.StartCommand.COMMAND_START)).ClientDisconnected += ClientDisconnected;
+			((StartCommand)ConsoleCommandManager.GetCommand(StartCommand.COMMAND_START)).ClientDisconnected += ClientDisconnected;
 
 			while (ServerManager.Running)
 			{
@@ -40,7 +41,7 @@ namespace ChatServerCore
 
 				if (input.StartsWith('/'))
 				{
-					CommandManager.HandleCommandInput(input);
+					ConsoleCommandManager.HandleCommandInput(input);
 				}
 			}
 

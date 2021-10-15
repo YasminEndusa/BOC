@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -73,7 +72,7 @@ namespace ChatServerCore
 						_ = Task.Run(() =>
 						{
 							Message m = new Message(MessageType.Error, "Message too long, please send shorter messages/smaller images/files.");
-							SendToClient(client, m);
+							client.SendMessage(m);
 						});
 
 						continue;
@@ -101,7 +100,7 @@ namespace ChatServerCore
 						catch (Exception)
 						{
 							Message m = new Message(MessageType.Error, "Error receiving your message. Please try again!");
-							SendToClient(client, m);
+							client.SendMessage(m);
 						}
 					});
 				}
@@ -136,7 +135,7 @@ namespace ChatServerCore
 				}
 
 				Message answer = new Message(MessageType.Connect, new string[] { client.RijndaelKey, client.RijndaelIV });
-				SendToClient(client, answer, true, false);
+				client.SendMessage(answer, true, false);
 			}
 			else if (message._messageType == MessageType.Authenticate)
 			{
@@ -153,14 +152,14 @@ namespace ChatServerCore
 					answer._payload = true;
 				}
 
-				SendToClient(client, answer);
+				client.SendMessage(answer);
 			}
 			else if (message._messageType == MessageType.TextMessage)
 			{
 				if (!client.IsAuthenticated)
 				{
 					Message errorMessage = new Message(MessageType.Error, "Client is not authenticated!");
-					SendToClient(client, errorMessage);
+					client.SendMessage(errorMessage);
 				}
 				else
 				{
@@ -171,15 +170,7 @@ namespace ChatServerCore
 					{
 						if (output.StartsWith('/'))
 						{
-							//TODO command handling
-							//FIXME temporary solution to change password
-							if (output.StartsWith("/passwd"))
-							{
-								output = output.Remove(0, "/passwd".Length + 1);
-								output = Helpers.ComputeHash(output);
-								DataManager.Users[client.Username] = output;
-								DataManager.SaveUsers();
-							}
+							ClientCommands.ClientCommandManager.HandleCommandInput(client, output);
 						}
 						else
 						{
@@ -225,35 +216,6 @@ namespace ChatServerCore
 			return message;
 		}
 
-		private static void SendToClient(ChatClient client, Message message, bool rsa = false, bool rijndael = true)
-		{
-			string text = JsonConvert.SerializeObject(message);
-
-			if (rsa)
-			{
-				using (RsaEncryption enc = new RsaEncryption(client.PublicKey))
-				{
-					text = RsaEncryption.PREFIX_RSA + enc.Encrypt(text);
-				}
-			}
-			else if (rijndael)
-			{
-				using (RijndaelEncryption enc = new RijndaelEncryption(client.RijndaelKey, client.RijndaelIV))
-				{
-					text = RijndaelEncryption.PREFIX_RIJNDAEL + enc.Encrypt(text);
-				}
-			}
-			else
-			{
-				text = RsaEncryption.PREFIX_UNENCRYPTED + text;
-			}
-
-			byte[] buffer = Encoding.UTF8.GetBytes(text);
-			byte[] length = BitConverter.GetBytes(buffer.Length);
-			byte[] final = length.Concat(buffer).ToArray();
-			_ = client.Socket.Send(final);
-		}
-
 		private static bool AuthenticateUser(string username, string password)
 		{
 			password = Helpers.ComputeHash(password);
@@ -273,7 +235,7 @@ namespace ChatServerCore
 			{
 				_ = Parallel.ForEach(this._clients, (client) =>
 				{
-					SendToClient(client, message);
+					client.SendMessage(message);
 				});
 			});
 		}

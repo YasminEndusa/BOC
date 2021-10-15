@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace ChatServerCore
+namespace ChatServerCore.ConsoleCommands
 {
-	public static class CommandManager
+	public static class ConsoleCommandManager
 	{
 		private static readonly List<ConsoleCommand> _consoleCommands = new List<ConsoleCommand>();
 
-		static CommandManager()
+		static ConsoleCommandManager()
 		{
-			RegisterCommand(new ConsoleCommands.StartCommand());
-			RegisterCommand(new ConsoleCommands.ExitCommand());
-			RegisterCommand(new ConsoleCommands.ManageUserCommand());
+			RegisterCommand(new StartCommand());
+			RegisterCommand(new ExitCommand());
+			RegisterCommand(new ManageUserCommand());
 		}
 
 		public static void RegisterCommand(ConsoleCommand command)

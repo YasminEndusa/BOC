@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ChatServerCore
+namespace ChatServerCore.ConsoleCommands
 {
 	public abstract class ConsoleCommand
 	{
