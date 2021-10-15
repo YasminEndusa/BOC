@@ -54,10 +54,18 @@ namespace ChatServerCore
 		{
 			try
 			{
-				while (this._running)
+				while (this._running && this._clients.Contains(client))
 				{
+					SocketError socketError;
 					byte[] buffer = new byte[4];
-					int received = client.Socket.Receive(buffer);
+					int received = client.Socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
+
+					if (socketError != SocketError.Success)
+					{
+						this.HandleSocketError(socketError);
+						continue;
+					}
+
 					int length = BitConverter.ToInt32(buffer);
 
 					if (length > Constants.MAX_MESSSAGE_SIZE)
@@ -72,7 +80,13 @@ namespace ChatServerCore
 					}
 
 					buffer = new byte[length];
-					received = client.Socket.Receive(buffer);
+					received = client.Socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
+
+					if (socketError != SocketError.Success)
+					{
+						this.HandleSocketError(socketError);
+						continue;
+					}
 
 					_ = Task.Run(() =>
 					{
@@ -84,11 +98,16 @@ namespace ChatServerCore
 					});
 				}
 			}
-			catch (SocketException se)
+			catch (Exception ex)
 			{
 				_ = this._clients.Remove(client);
-				this.OnClientDisconnected(client.Username, client.Address, se.Message);
+				this.OnClientDisconnected(client.Username, client.Address, ex.Message);
 			}
+		}
+
+		private void HandleSocketError(SocketError socketError)
+		{
+			throw new Exception(string.Format("SocketError: {0}", socketError.ToString()));
 		}
 
 		private void OnClientDisconnected(string username, IPAddress address, string message)

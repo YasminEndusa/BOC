@@ -58,6 +58,7 @@
     <Compile Include="ChatMessagePanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Client.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="ImageButton.cs">
       <SubType>Component</SubType>
@@ -75,6 +76,7 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="NewMessageEventArgs.cs" />
     <Compile Include="OpenImageEventArgs.cs" />
     <Compile Include="PreForm.cs">
       <SubType>Form</SubType>
