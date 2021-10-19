@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using ChatAPI;
-using Newtonsoft.Json;
 
 namespace ChatServerCore
 {
@@ -13,11 +11,10 @@ namespace ChatServerCore
 	{
 		public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
 
-		readonly static RsaEncryption _encryption = new RsaEncryption();
+		readonly RsaEncryption _encryption = new RsaEncryption();
 		readonly List<ChatClient> _clients = new List<ChatClient>();
 		readonly Socket _socket = null;
 		readonly int _port;
-		readonly bool _running = false;
 
 		public ChatServer(int port)
 		{
@@ -29,207 +26,38 @@ namespace ChatServerCore
 			this._socket.Bind(endPoint);
 
 			this._socket.Listen(1);
-			this._running = true;
 
 			Console.WriteLine("Server started up successfully.");
 			_ = Task.Run(() =>
 			{
-				while (this._running)
+				while (ServerManager.Running)
 				{
 					Socket clientSocket = this._socket.Accept();
 					string username = string.Format("[{0}]", (clientSocket.RemoteEndPoint as IPEndPoint).Address.ToString());
-					ChatClient client = new ChatClient(username, clientSocket);
+					ChatClient client = new ChatClient(username, clientSocket, this._encryption);
+					client.Disconnected += this.Client_Disconnected;
+					client.ChatMessageReceived += this.Client_ChatMessageReceived;
 					this._clients.Add(client);
 
 					_ = Task.Run(() =>
 					{
-						this.ListenFromClient(client);
+						client.ListenFrom();
 					});
 				}
 			});
 		}
 
-		private void ListenFromClient(ChatClient client)
+		private void Client_ChatMessageReceived(object sender, ChatMessageReceivedEventArgs e)
 		{
-			try
-			{
-				while (this._running && this._clients.Contains(client))
-				{
-					SocketError socketError;
-					byte[] buffer = new byte[4];
-					int received = client.Socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
-
-					if (socketError != SocketError.Success)
-					{
-						this.HandleSocketError(socketError);
-						continue;
-					}
-
-					int length = BitConverter.ToInt32(buffer);
-
-					if (length > Constants.MAX_MESSSAGE_SIZE)
-					{
-						_ = Task.Run(() =>
-						{
-							Message m = new Message(MessageType.Error, "Message too long, please send shorter messages/smaller images/files.");
-							client.SendMessage(m);
-						});
-
-						continue;
-					}
-
-					buffer = new byte[length];
-					received = client.Socket.Receive(buffer, 0, buffer.Length, SocketFlags.None, out socketError);
-
-					if (socketError != SocketError.Success)
-					{
-						this.HandleSocketError(socketError);
-						continue;
-					}
-
-					_ = Task.Run(() =>
-					{
-						try
-						{
-							if (received > 0)
-							{
-								Message message = ReadMessage(client, buffer, received);
-								this.HandleMessage(client, message);
-							}
-						}
-						catch (Exception)
-						{
-							Message m = new Message(MessageType.Error, "Error receiving your message. Please try again!");
-							client.SendMessage(m);
-						}
-					});
-				}
-			}
-			catch (Exception ex)
-			{
-				_ = this._clients.Remove(client);
-				this.OnClientDisconnected(client.Username, client.Address, ex.Message);
-			}
+			this.SendToAllClients(e.Message);
 		}
 
-		private void HandleSocketError(SocketError socketError)
+		private void Client_Disconnected(object sender, ClientDisconnectedEventArgs e)
 		{
-			throw new Exception(string.Format("SocketError: {0}", socketError.ToString()));
+			_ = this._clients.Remove(e.Client);
 		}
 
-		private void OnClientDisconnected(string username, IPAddress address, string message)
-		{
-			this.ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(username, address, message));
-		}
-
-		private void HandleMessage(ChatClient client, Message message)
-		{
-			if (message._messageType == MessageType.Connect)
-			{
-				string clientPublicKey = message._payload.ToString();
-				client.SetPublicKey(clientPublicKey);
-
-				using (RijndaelEncryption encryption = new RijndaelEncryption())
-				{
-					client.SetRijndaelValues(encryption.GetKeyString(), encryption.GetVectorString());
-				}
-
-				Message answer = new Message(MessageType.Connect, new string[] { client.RijndaelKey, client.RijndaelIV });
-				client.SendMessage(answer, true, false);
-			}
-			else if (message._messageType == MessageType.Authenticate)
-			{
-				KeyValuePair<string, string> payload = JsonConvert.DeserializeObject<KeyValuePair<string, string>>(message._payload.ToString());
-				string username = payload.Key;
-				string password = payload.Value;
-
-				Message answer = new Message(MessageType.Authenticate, false);
-
-				if (AuthenticateUser(username, password))
-				{
-					client.IsAuthenticated = true;
-					client.SetUsername(username);
-					answer._payload = true;
-				}
-
-				client.SendMessage(answer);
-			}
-			else if (message._messageType == MessageType.TextMessage)
-			{
-				if (!client.IsAuthenticated)
-				{
-					Message errorMessage = new Message(MessageType.Error, "Client is not authenticated!");
-					client.SendMessage(errorMessage);
-				}
-				else
-				{
-					string rawMessage = message._payload.ToString();
-					string output = string.Format("{0}", rawMessage);
-
-					if (output != null)
-					{
-						if (output.StartsWith('/'))
-						{
-							ClientCommands.ClientCommandManager.HandleCommandInput(client, output);
-						}
-						else
-						{
-							string sender = client.Username;
-							MessageType messageType = MessageType.TextMessage;
-
-							this.SendToAllClients(messageType, sender, output);
-						}
-					}
-				}
-			}
-			else if (message._messageType == MessageType.Image || message._messageType == MessageType.Blob)
-			{
-				message._sender = client.Username;
-				this.SendToAllClients(message);
-			}
-		}
-
-		private static Message ReadMessage(ChatClient client, byte[] buffer, int received)
-		{
-			string text = Encoding.UTF8.GetString(buffer, 0, received);
-
-			if (text.StartsWith(RsaEncryption.PREFIX_UNENCRYPTED))
-			{
-				text = text.Remove(0, RsaEncryption.PREFIX_UNENCRYPTED.Length);
-			}
-			else if (text.StartsWith(RsaEncryption.PREFIX_RSA))
-			{
-				text = text.Remove(0, RsaEncryption.PREFIX_RSA.Length);
-				text = _encryption.Decrypt(text);
-			}
-			else if (text.StartsWith(RijndaelEncryption.PREFIX_RIJNDAEL))
-			{
-				text = text.Remove(0, RijndaelEncryption.PREFIX_RIJNDAEL.Length);
-
-				using (RijndaelEncryption enc = new RijndaelEncryption(client.RijndaelKey, client.RijndaelIV))
-				{
-					text = enc.Decrypt(text);
-				}
-			}
-
-			Message message = JsonConvert.DeserializeObject<Message>(text);
-			return message;
-		}
-
-		private static bool AuthenticateUser(string username, string password)
-		{
-			password = Helpers.ComputeHash(password);
-
-			return DataManager.Users.ContainsKey(username) && DataManager.Users[username] == password;
-		}
-
-		public void SendToAllClients(MessageType messageType, string sender, object payload)
-		{
-			Message message = new Message(sender, messageType, payload);
-			this.SendToAllClients(message);
-		}
-
-		private void SendToAllClients(Message message)
+		public void SendToAllClients(Message message)
 		{
 			_ = Task.Run(() =>
 			{
@@ -258,7 +86,7 @@ namespace ChatServerCore
 				this._socket.Close();
 			}
 
-			_encryption.Dispose();
+			this._encryption.Dispose();
 		}
 	}
 }

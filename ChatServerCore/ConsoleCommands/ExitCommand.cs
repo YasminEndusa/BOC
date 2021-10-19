@@ -18,7 +18,8 @@ namespace ChatServerCore.ConsoleCommands
 		{
 			if (ServerManager.Server != null)
 			{
-				ServerManager.Server.SendToAllClients(MessageType.ServerMessage, null, "Server closed, good bye!");
+				Message message = new Message(MessageType.ServerMessage, "Server closed, good bye!");
+				ServerManager.Server.SendToAllClients(message);
 				ServerManager.Server.CloseAllClientSockets();
 			}
 

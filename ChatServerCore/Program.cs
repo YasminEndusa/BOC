@@ -57,7 +57,7 @@ namespace ChatServerCore
 
 		private static void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
 		{
-			Console.WriteLine("Error listening on client: '{0}', IP '{1}'. They have been disconnected! ({2})", e.Username, e.Address, e.Message);
+			Console.WriteLine("Error listening on client: '{0}', IP '{1}'. They have been disconnected! ({2})", e.Client.Username, e.Client.Address, e.Message);
 			Console.Write(">>> ");
 		}
 	}
